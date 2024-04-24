@@ -1,3 +1,6 @@
+// this is used for inter service communication using proxy npm library
+
+
 const express = require("express");
 const cors = require("cors");
 const proxy = require("express-http-proxy");
