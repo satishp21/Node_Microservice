@@ -1,12 +1,24 @@
-import express from 'express'
-import { createVandor, getVandor, getVandors } from '../controller'
+import express from "express";
+import {
+  addFood,
+  getFoods,
+  getVandorProfile,
+  updateVandorProfile,
+  updateVandorService,
+  vandorLogin,
+} from "../controller/vandorController";
+import { authenticate } from "../middleware/authenticate";
 
-const router = express()
+const router = express();
 
-router.get('/vandor/:id', getVandor)
+router.post("/login", vandorLogin);
 
-router.post('/vandor',createVandor)
+router.use(authenticate);
+router.get("/profile", getVandorProfile);
+router.patch("/profile", updateVandorProfile);
+router.patch("/service", updateVandorService);
 
-router.get('/vandors', getVandors)
+router.post("/addfood", addFood);
+router.get("/foods", getFoods);
 
-export {router as VandorRoutes}
+export { router as VandorRoutes };
