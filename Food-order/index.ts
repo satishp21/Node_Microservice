@@ -11,8 +11,8 @@ const app = express()
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended : true}))
 
-app.use(adminRoutes)
-app.use(VandorRoutes)
+app.use('/admin',adminRoutes)
+app.use('/vandor',VandorRoutes)
 
 
 app.listen(8000, () => {

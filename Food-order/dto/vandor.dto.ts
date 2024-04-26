@@ -9,3 +9,19 @@ export interface createVandorInput {
     password : string
     
 }
+
+export interface vandorLoginInput {
+    email : string,
+    password : string
+}
+
+export interface vandorPayload {
+    email : string,
+    id : string,
+}
+
+export interface EditVandorInput {
+    name : string,
+    address : string,
+    phone : string
+}
