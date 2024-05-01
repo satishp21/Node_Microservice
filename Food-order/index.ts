@@ -1,21 +1,19 @@
 import express from "express";
-import mongoose from "mongoose";
 
-import bodyParser from "body-parser";
+import App from "./src/services/ExpressApp";
 
-import {adminRoutes, VandorRoutes} from './routes'
-import { MONGO_URI } from "./config";
+import dbconnection from "./src/services/Database";
 
-const app = express()
+const StartServer = async () => {
+  const app = express();
 
-app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({extended : true}))
+  await dbconnection();
 
-app.use('/admin',adminRoutes)
-app.use('/vandor',VandorRoutes)
+  await App(app);
 
+  app.listen(8000, () => {
+    console.log("listening on port 8000");
+  });
+};
 
-app.listen(8000, () => {
-    mongoose.connect(MONGO_URI)
-    console.log('app is listening on port 8000')
-})
+StartServer();
