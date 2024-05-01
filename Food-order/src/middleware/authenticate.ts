@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
 import jsonwebtoken from "jsonwebtoken";
-import { vandorPayload } from "../dto";
+import { vandorPayload, customerPayload } from "../dto";
 
 export const authenticate = async (
   req: Request,
@@ -10,10 +10,9 @@ export const authenticate = async (
   try {
     const token = req.header("Authorization");
 
-    const user = jsonwebtoken.verify(
-      token!.split(" ")[1],
-      "seckey"
-    ) as vandorPayload;
+    const user = jsonwebtoken.verify(token!.split(" ")[1], "seckey") as
+      | vandorPayload
+      | customerPayload;
     if (!user) {
       return res.json({ message: "unauthorized access" });
     }
