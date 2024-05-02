@@ -9,13 +9,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editCustomerProfile = exports.getCustomerProfile = exports.requestOtp = exports.customerVerify = exports.customerSignin = exports.customerSignup = void 0;
+exports.getOrderById = exports.getOrders = exports.createOrder = exports.editCustomerProfile = exports.getCustomerProfile = exports.requestOtp = exports.customerVerify = exports.customerSignin = exports.customerSignup = void 0;
 const class_validator_1 = require("class-validator");
 const http_status_codes_1 = require("http-status-codes");
 const class_transformer_1 = require("class-transformer");
 const customer_dto_1 = require("../dto/customer.dto");
 const Customet_1 = require("../models/Customet");
 const utility_1 = require("../utility");
+const models_1 = require("../models");
 const customerSignup = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const customerInputs = (0, class_transformer_1.plainToClass)(customer_dto_1.CreateCustomerInputs, req.body);
     const inputErrors = yield (0, class_validator_1.validate)(customerInputs);
@@ -174,4 +175,54 @@ const editCustomerProfile = (req, res, next) => __awaiter(void 0, void 0, void 0
     }
 });
 exports.editCustomerProfile = editCustomerProfile;
+const createOrder = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = res.locals.user;
+    // const profile = await Customer.findById(user.id);
+    // const { firstName, lastName, phone, address } = req.body;
+    if (user) {
+        const error = yield (0, class_validator_1.validate)(customer_dto_1.EditCustomerInputs, req.body);
+        const orderId = `${Math.floor(Math.random() * 89999) + 1000}`;
+        if (error.length > 0) {
+            return res.status(http_status_codes_1.StatusCodes.BAD_REQUEST).json(error);
+        }
+        const cart = req.body;
+        let cartItems = Array();
+        let netAmount = 0.0;
+        const foods = yield models_1.Food.find()
+            .where("_id")
+            .in(cart.map((items) => items._id))
+            .exec();
+        foods.map((food) => {
+            cart.map(({ _id, unit }) => {
+                if (String(food._id) == _id) {
+                    netAmount += food.price * unit;
+                }
+            });
+        });
+        if (cartItems) {
+            const currentOrder = yield models_1.Order.create({
+                orderId: orderId,
+                items: cartItems,
+                totalAmount: netAmount,
+                orderDate: new Date(),
+                paidThrough: "COD",
+                PaymentResponse: "",
+                orderStatus: "Waiting",
+            });
+        }
+        // profile.firstName = firstName;
+        // profile.lastName = lastName;
+        // profile.phone = phone;
+        // profile.address = address;
+        // await profile.save();
+        return res
+            .status(http_status_codes_1.StatusCodes.OK)
+            .json({ message: "profile updated successfully" });
+    }
+});
+exports.createOrder = createOrder;
+const getOrders = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () { });
+exports.getOrders = getOrders;
+const getOrderById = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () { });
+exports.getOrderById = getOrderById;
 //# sourceMappingURL=customerController.js.map

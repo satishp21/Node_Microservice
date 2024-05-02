@@ -38,3 +38,8 @@ export class EditCustomerInputs {
   @Length(7, 12)
   phone: string;
 }
+
+export class orderInputs {
+  _id: string;
+  unit: number;
+}

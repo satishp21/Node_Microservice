@@ -16,4 +16,7 @@ router.patch("/verify", controller_1.customerVerify);
 router.get("/otp", controller_1.requestOtp);
 router.get("/profile", controller_1.getCustomerProfile);
 router.patch("/profile", controller_1.editCustomerProfile);
+router.post("/create-order", controller_1.createOrder);
+router.get("orders", controller_1.getOrders);
+router.get("/order/:id", controller_1.getOrderById);
 //# sourceMappingURL=customerRoutes..js.map

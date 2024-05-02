@@ -1,5 +1,6 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import { CreateCustomerInputs } from "../dto/customer.dto";
+import { OrderDoc } from "./Order";
 
 interface CustomerDoc extends CreateCustomerInputs {
   email: string;
@@ -14,6 +15,8 @@ interface CustomerDoc extends CreateCustomerInputs {
   lat: number;
   lng: number;
   address: string;
+  orders: [OrderDoc];
+  cart: [any];
 }
 
 const customerSchema = new mongoose.Schema(
@@ -30,6 +33,18 @@ const customerSchema = new mongoose.Schema(
     otp_expiry: Number,
     lat: Number,
     lng: Number,
+    orders: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "order",
+      },
+    ],
+    cart: [
+      {
+        food: { type: Schema.Types.ObjectId, ref: "food" },
+        unit: Number,
+      },
+    ],
   },
   {
     timestamps: true,

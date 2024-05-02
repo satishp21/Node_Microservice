@@ -23,37 +23,31 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Customer = void 0;
+exports.Order = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const customerSchema = new mongoose_1.default.Schema({
-    email: String,
-    password: String,
-    salt: String,
-    firstName: String,
-    lastName: String,
-    phone: String,
-    address: String,
-    verified: Boolean,
-    otp: Number,
-    otp_expiry: Number,
-    lat: Number,
-    lng: Number,
-    orders: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: "order",
-    },
+const OrderSchema = new mongoose_1.default.Schema({
+    orderId: String,
+    items: [
+        {
+            food: { type: mongoose_1.Schema.Types.ObjectId, ref: "food", required: true },
+            unit: Number,
+        },
+    ],
+    totalAmount: Number,
+    orderDate: Date,
+    paidThrough: Number,
+    paymentResponse: String,
+    orderStatus: String,
 }, {
     timestamps: true,
     toJSON: {
         transform(doc, ret) {
             delete ret.createdAt;
-            delete ret.password;
-            delete ret.salt;
             delete ret.updatedAt;
             delete ret.__v;
         },
     },
 });
-const Customer = mongoose_1.default.model("customer", customerSchema);
-exports.Customer = Customer;
-//# sourceMappingURL=Customet.js.map
+const Order = mongoose_1.default.model("order", OrderSchema);
+exports.Order = Order;
+//# sourceMappingURL=Order.js.map

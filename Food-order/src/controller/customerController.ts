@@ -6,9 +6,11 @@ import {
   CreateCustomerInputs,
   CustomerLoginInputs,
   EditCustomerInputs,
+  orderInputs,
 } from "../dto/customer.dto";
 import { Customer } from "../models/Customet";
 import { genHash, genOtp, genToken, onRequestOTP, passCheck } from "../utility";
+import { Food, Order } from "../models";
 
 export const customerSignup = async (
   req: Request,
@@ -226,4 +228,208 @@ export const editCustomerProfile = async (
       .status(StatusCodes.OK)
       .json({ message: "profile updated successfully" });
   }
+};
+
+export const addToCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = res.locals.user;
+
+  console.log(user, "this is your userrrrrrr");
+
+  if (user) {
+    const profile = await Customer.findById(user.id).populate("cart.food");
+
+    console.log(profile, ">>>>>>>this is the profile");
+
+    let cartItems = Array();
+
+    const { _id, unit } = <orderInputs>req.body;
+
+    const food = await Food.findById(_id);
+
+    if (food) {
+      if (profile) {
+        console.log(profile.cart, ">>>>>>>>>>>>>>profile.cart");
+
+        cartItems = profile?.cart;
+
+        if (cartItems.length > 0) {
+          let existinFoodItem = cartItems.filter(
+            (item) => String(item.food._id) === _id
+          );
+          if (existinFoodItem.length > 0) {
+            const index = cartItems.indexOf(existinFoodItem[0]);
+
+            if (unit > 0) {
+              cartItems[index] = { food, unit };
+            } else {
+              cartItems.splice(index, 1);
+            }
+          } else {
+            cartItems.push({ food, unit });
+          }
+        } else {
+          cartItems.push({ food, unit });
+        }
+        if (cartItems) {
+          profile.cart = cartItems as any;
+          const cartResult = await profile.save();
+          return res.status(StatusCodes.ACCEPTED).json(cartResult.cart);
+        }
+      }
+    }
+  }
+
+  return res
+    .status(StatusCodes.OK)
+    .json({ message: "something went wrong while creating order" });
+};
+
+export const getCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = res.locals.user;
+
+  if (user) {
+    const orders = await Customer.findById(user.id)?.populate("cart.food");
+
+    return res
+      .status(StatusCodes.OK)
+      .json({ message: "order fetched successfully", orders: orders?.cart });
+  }
+
+  return res
+    .status(StatusCodes.BAD_REQUEST)
+    .json({ message: "something went wrong please login again" });
+};
+
+export const deleteCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = res.locals.user;
+
+  if (user) {
+    const profile = await Customer.findById(user.id);
+
+    if (profile) {
+      profile.cart = [] as any;
+
+      const cart = await profile.save();
+
+      return res.status(StatusCodes.OK).json({
+        message: "cart deleted successfully successfully",
+        cart: cart,
+      });
+    }
+  }
+
+  return res
+    .status(StatusCodes.BAD_REQUEST)
+    .json({ message: "something went wrong please login again" });
+};
+
+export const createOrder = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = res.locals.user;
+
+  const profile = await Customer.findById(user.id);
+
+  if (user) {
+    const orderId = `${Math.floor(Math.random() * 89999) + 1000}`;
+
+    const cart = <[orderInputs]>req.body;
+
+    let cartItems = Array();
+
+    let netAmount = 0.0;
+
+    const foods = await Food.find()
+      .where("_id")
+      .in(cart.map((items) => items._id))
+      .exec();
+
+    foods.map((food) => {
+      cart.map(({ _id, unit }) => {
+        if (String(food._id) == _id) {
+          netAmount += food.price * unit;
+          cartItems.push({ food, unit });
+        }
+      });
+    });
+
+    if (cartItems) {
+      const currentOrder = await Order.create({
+        orderId: orderId,
+        items: cartItems,
+        totalAmount: netAmount,
+        orderDate: new Date(),
+        paidThrough: "COD",
+        PaymentResponse: "",
+        orderStatus: "Waiting",
+      });
+
+      if (currentOrder) {
+        profile.orders.push(currentOrder);
+        const profileResponse = await profile.save();
+
+        return res.status(StatusCodes.ACCEPTED).json(currentOrder);
+      }
+    }
+
+    return res
+      .status(StatusCodes.OK)
+      .json({ message: "something went wrong while creating order" });
+  }
+};
+
+export const getOrders = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = res.locals.user;
+
+  if (user) {
+    const orders = await Customer.findById(user.id)?.populate("orders");
+
+    return res
+      .status(StatusCodes.OK)
+      .json({ message: "order fetched successfully", orders: orders });
+  }
+
+  return res
+    .status(StatusCodes.BAD_REQUEST)
+    .json({ message: "something went wrong please login again" });
+};
+
+export const getOrderById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = res.locals.user;
+
+  const orderId = req.params.id;
+
+  if (user) {
+    const order = await Order.findById(orderId).populate("items.food");
+
+    return res
+      .status(StatusCodes.OK)
+      .json({ message: "order fetched successfully", orders: order });
+  }
+
+  return res
+    .status(StatusCodes.BAD_REQUEST)
+    .json({ message: "something went wrong please login again" });
 };
