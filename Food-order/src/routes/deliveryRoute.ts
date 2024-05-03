@@ -1,53 +1,30 @@
 import express, { Request, Response, NextFunction } from "express";
 import {
-  addToCart,
-  createOrder,
-  createPayment,
-  customerSignin,
-  customerSignup,
-  customerVerify,
-  deleteCart,
-  editCustomerProfile,
-  getCart,
-  getCustomerProfile,
-  getOrderById,
-  getOrders,
-  requestOtp,
-  verifyOffer,
+  DeliveryLogin,
+  DeliverySignUp,
+  EditDeliveryProfile,
+  GetDeliveryProfile,
+  UpdateDeliveryUserStatus,
 } from "../controller";
 import { authenticate } from "../middleware/authenticate";
+import { Offer } from "../models/Offer";
 
-const router = express();
+const router = express.Router();
 
-router.post("/signup", customerSignup);
+/* ------------------- Signup / Create Customer --------------------- */
+router.post("/signup", DeliverySignUp);
 
-router.post("/login", customerSignin);
+/* ------------------- Login --------------------- */
+router.post("/login", DeliveryLogin);
 
+/* ------------------- Authentication --------------------- */
 router.use(authenticate);
 
-router.patch("/verify", customerVerify);
+/* ------------------- Change Service Status --------------------- */
+router.put("/change-status", UpdateDeliveryUserStatus);
 
-router.get("/otp", requestOtp);
+/* ------------------- Profile --------------------- */
+router.get("/profile", GetDeliveryProfile);
+router.patch("/profile", EditDeliveryProfile);
 
-router.get("/profile", getCustomerProfile);
-
-router.patch("/profile", editCustomerProfile);
-
-//Cart
-
-router.post("/cart", addToCart);
-router.get("/cart", getCart);
-router.delete("/cart", deleteCart);
-
-//apply offer
-router.get("/offer/verify/:id", verifyOffer);
-
-//payment
-
-router.post("/create-payment", createPayment);
-
-router.post("/create-order", createOrder);
-router.get("/orders", getOrders);
-router.get("/order/:id", getOrderById);
-
-export { router as customerRoute };
+export { router as DeliveryRoute };
