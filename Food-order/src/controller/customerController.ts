@@ -11,7 +11,7 @@ import {
 } from "../dto/customer.dto";
 import { Customer } from "../models/Customet";
 import { genHash, genOtp, genToken, onRequestOTP, passCheck } from "../utility";
-import { Food, Offer, Order, Vandor } from "../models";
+import { DeliveryUser, Food, Offer, Order, Vandor } from "../models";
 import { Transaction } from "../models/Transaction";
 
 export const customerSignup = async (
@@ -536,16 +536,33 @@ export const createPayment = async (
     .json({ message: "payment successfull", data: transaction });
 };
 
-const assignOrderForDelivery = async (orderId: string, vandorId: string) => {
-  // find the vandor
-  const vandor = await Vandor.findById(vandorId);
-  if (vandor) {
-    const areaCode = vandor?.pincode;
-    const vandorLat = vandor?.lat;
-    const vandorLng = vandor?.lng;
-  }
-  //find the available delivery person
+const assignOrderForDelivery = async (orderId: string, vendorId: string) => {
+  // find the vendor
+  const vendor = await Vandor.findById(vendorId);
+  if (vendor) {
+    const areaCode = vendor.pincode;
+    const vendorLat = vendor.lat;
+    const vendorLng = vendor.lng;
 
-  // check the nearest delivery person and assign the order
-  // update the order id
+    //find the available Delivery person
+    const deliveryPerson = await DeliveryUser.find({
+      pincode: areaCode,
+      verified: true,
+      isAvailable: true,
+    });
+    if (deliveryPerson) {
+      // Check the nearest delivery person and assign the order
+
+      const currentOrder = await Order.findById(orderId);
+      if (currentOrder) {
+        //update Delivery ID
+        currentOrder.deliveryId = deliveryPerson[0]._id;
+        await currentOrder.save();
+
+        //Notify to vendor for received new order firebase push notification
+      }
+    }
+  }
+
+  // Update Delivery ID
 };

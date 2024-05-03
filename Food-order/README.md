@@ -9,3 +9,5 @@ This project serves as the backend for a food ordering application. It includes 
 Interfaces used for data transfer objects (DTOs) are defined to maintain consistency and structure throughout the project.
 
 Validation is implemented using libraries such as class-validator and class-transformer. Additionally, Twilio is utilized for OTP (one-time password) sending functionality.
+
+monolithic setup completed

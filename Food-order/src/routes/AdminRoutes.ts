@@ -1,6 +1,8 @@
 import express, { Request, Response, NextFunction } from "express";
 
 import {
+  VerifyDeliveryUser,
+  GetDeliveryUsers,
   createVandor,
   getTransactionById,
   getTransactions,
@@ -23,5 +25,8 @@ router.get("/vandors", getVandors);
 router.get("/transactions", getTransactions);
 
 router.get("/transaction/:id", getTransactionById);
+
+router.put("/delivery/verify", VerifyDeliveryUser);
+router.get("/delivery/users", GetDeliveryUsers);
 
 export { router as adminRoutes };
