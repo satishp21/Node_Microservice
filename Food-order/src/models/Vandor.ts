@@ -14,6 +14,8 @@ interface vandorDoc extends Document {
   coverImages: [string];
   rating: number;
   foods: any;
+  lat: number;
+  lng: number;
 }
 
 const VandorSchema = new Schema(

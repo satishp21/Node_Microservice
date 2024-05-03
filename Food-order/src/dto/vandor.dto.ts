@@ -24,3 +24,20 @@ export interface EditVandorInput {
   address: string;
   phone: string;
 }
+
+export interface addOfferInput {
+  offerType: string;
+  vandors: [any];
+  title: string;
+  description: string;
+  minValue: number;
+  offerAmount: number;
+  startValidity: Date;
+  endValidity: Date;
+  promoCode: string;
+  promoType: string;
+  bank: [any];
+  bins: [any];
+  pincode: string;
+  isActive: boolean;
+}

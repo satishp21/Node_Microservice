@@ -1,8 +1,9 @@
 import express, { Request, Response, NextFunction } from "express";
-import { Food, Vandor } from "../models";
+import { Food, Offer, Order, Vandor } from "../models";
 import { genToken, passCheck } from "../utility/passUtility";
-import { EditVandorInput, vandorLoginInput } from "../dto";
+import { EditVandorInput, addOfferInput, vandorLoginInput } from "../dto";
 import { CreateFoodInput } from "../dto/Food.dto";
+import { StatusCodes } from "http-status-codes";
 
 export const vandorLogin = async (req: Request, res: Response) => {
   const { email, password } = <vandorLoginInput>req.body;
@@ -52,10 +53,16 @@ export const updateVandorProfile = async (req: Request, res: Response) => {
 export const updateVandorService = async (req: Request, res: Response) => {
   const user = res?.locals?.user;
 
+  const { lat, lng } = req.body;
+
   if (user) {
     const vandor = await Vandor.findOne({ email: user.email });
     if (vandor) {
       vandor.serviceAvailable = !vandor.serviceAvailable;
+      if (lat && lng) {
+        vandor.lat = lat;
+        vandor.lng = lng;
+      }
       const savedResult = await vandor?.save();
       return res.json(savedResult);
     }
@@ -101,4 +108,135 @@ export const getFoods = async (req: Request, res: Response) => {
   }
 
   return res.json({ message: "vandor information not found" });
+};
+
+export const getCurrentOrder = async (req: Request, res: Response) => {
+  const user = res?.locals?.user;
+
+  if (user) {
+    const order = await Order.find({ vandorId: user.id }).populate(
+      "items.food"
+    );
+
+    if (order) {
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: "current orders", orders: order });
+    }
+  }
+
+  return res.json({
+    message: "something went wrong please try logging in again",
+  });
+};
+
+export const processOrder = async (req: Request, res: Response) => {
+  const orderId = req.params.id;
+
+  const { status, remarks, time } = req.body;
+
+  if (orderId) {
+    const order = await Order.findById(orderId).populate("items.food");
+
+    order.orderStatus = status;
+    order.remarks = remarks;
+
+    if (time) {
+      order.readyTime = time;
+    }
+
+    const orderResult = await order.save();
+
+    if (orderResult) {
+      return res.status(StatusCodes.ACCEPTED).json({
+        message: "order processed successfully",
+        data: orderResult,
+      });
+    }
+  }
+
+  return res.json({
+    message: "something went wrong please try logging in again",
+  });
+};
+
+export const getOrderDetails = async (req: Request, res: Response) => {
+  const orderId = req.params.id;
+
+  if (orderId) {
+    const order = await Order.findById(orderId).populate("items.food");
+
+    if (order) {
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: "current orders", orders: order });
+    }
+  }
+
+  return res.json({
+    message: "something went wrong please try logging in again",
+  });
+};
+
+export const getOffers = async (req: Request, res: Response) => {
+  const vandor = res.locals.user;
+
+  if (vandor) {
+    const order = await Offer.find({ vandor: vandor.id }).populate("vandor");
+
+    if (order) {
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: "current orders", orders: order });
+    }
+  }
+
+  return res.json({
+    message: "something went wrong please try logging in again",
+  });
+};
+
+export const addOffer = async (req: Request, res: Response) => {
+  const user = res.locals.user;
+
+  console.log(user);
+
+  if (user) {
+    const vandor = await Vandor.findById(user.id);
+
+    if (vandor) {
+      const offer = await Offer.create({
+        ...(req.body as addOfferInput),
+        vandor: [vandor],
+      });
+      return res
+        .status(StatusCodes.ACCEPTED)
+        .json({ message: "offer added successfully", data: offer });
+    }
+  }
+  return res.json({
+    message: "something went wrong please try logging in again",
+  });
+};
+
+export const editOffer = async (req: Request, res: Response) => {
+  const user = res.locals.user;
+  const offerId = req.params.id;
+
+  if (user) {
+    if (offerId) {
+      const offer = await Offer.findByIdAndUpdate(
+        offerId,
+        req.body as addOfferInput,
+        { new: true }
+      );
+      return res
+        .status(StatusCodes.ACCEPTED)
+        .json({ message: "offer updated successfully", data: offer });
+    }
+  }
+
+  return res.json({
+    message: "something went wrong please try logging in again",
+  });
 };
