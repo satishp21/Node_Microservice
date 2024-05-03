@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import { createVandorInput } from "../dto";
 
-import { Vandor } from "../models";
+import { DeliveryUser, Vandor } from "../models";
 import { genHash } from "../utility/passUtility";
 import { Transaction } from "../models/Transaction";
 import { StatusCodes } from "http-status-codes";
@@ -89,4 +89,39 @@ export const getTransactionById = async (
   return res
     .status(StatusCodes.BAD_GATEWAY)
     .json({ message: "transactions are not available" });
+};
+
+export const VerifyDeliveryUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { _id, status } = req.body;
+
+  if (_id) {
+    const profile = await DeliveryUser.findById(_id);
+
+    if (profile) {
+      profile.verified = status;
+      const result = await profile.save();
+
+      return res.status(200).json(result);
+    }
+  }
+
+  return res.json({ message: "Unable to verify Delivery User" });
+};
+
+export const GetDeliveryUsers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const deliveryUsers = await DeliveryUser.find();
+
+  if (deliveryUsers) {
+    return res.status(200).json(deliveryUsers);
+  }
+
+  return res.json({ message: "Unable to get Delivery Users" });
 };
