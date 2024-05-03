@@ -3,6 +3,8 @@ import { createVandorInput } from "../dto";
 
 import { Vandor } from "../models";
 import { genHash } from "../utility/passUtility";
+import { Transaction } from "../models/Transaction";
+import { StatusCodes } from "http-status-codes";
 
 export const createVandor = async (req: Request, res: Response) => {
   try {
@@ -25,6 +27,8 @@ export const createVandor = async (req: Request, res: Response) => {
       pincode,
       password: hashedpass,
       email,
+      lat: 0,
+      lng: 0,
     });
     return res.json({
       data: createVandor,
@@ -55,4 +59,34 @@ export const getVandor = async (req: Request, res: Response) => {
   } catch (error) {
     return res.json({ Error: error, message: "vandor creation failed" });
   }
+};
+
+export const getTransactions = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const transactions = await Transaction.find();
+  if (transactions) {
+    return res
+      .status(StatusCodes.OK)
+      .json({ message: "receved all the transactions", data: transactions });
+  }
+};
+
+export const getTransactionById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const id = req.params.id;
+  const transactions = await Transaction.findById(id);
+  if (transactions) {
+    return res
+      .status(StatusCodes.OK)
+      .json({ message: "receved all the transactions", data: transactions });
+  }
+  return res
+    .status(StatusCodes.BAD_GATEWAY)
+    .json({ message: "transactions are not available" });
 };

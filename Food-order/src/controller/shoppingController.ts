@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import { createVandorInput } from "../dto";
 
-import { Vandor } from "../models";
+import { Offer, Vandor } from "../models";
 
 export const getFoodAvailability = async (req: Request, res: Response) => {
   try {
@@ -111,6 +111,27 @@ export const restaurantById = async (req: Request, res: Response) => {
 
     if (vandor) {
       return res.json(vandor);
+    }
+
+    return res.json({
+      message: "Data not found",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.json({ Error: error, message: "vandor creation failed" });
+  }
+};
+
+export const getOffersByPincode = async (req: Request, res: Response) => {
+  try {
+    const pincode = req.params.pincode;
+    const offers = await Offer.find({
+      pincode: pincode,
+      isActive: true,
+    }).populate("vandor");
+
+    if (offers) {
+      return res.json(offers);
     }
 
     return res.json({

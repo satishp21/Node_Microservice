@@ -40,6 +40,12 @@ export class EditCustomerInputs {
 }
 
 export class orderInputs {
+  txnId: string;
+  amount: string;
+  items: [cartItem];
+}
+
+export class cartItem {
   _id: string;
   unit: number;
 }

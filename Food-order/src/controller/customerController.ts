@@ -3,6 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import { plainToClass } from "class-transformer";
 import express, { Request, Response, NextFunction } from "express";
 import {
+  cartItem,
   CreateCustomerInputs,
   CustomerLoginInputs,
   EditCustomerInputs,
@@ -10,7 +11,8 @@ import {
 } from "../dto/customer.dto";
 import { Customer } from "../models/Customet";
 import { genHash, genOtp, genToken, onRequestOTP, passCheck } from "../utility";
-import { Food, Order } from "../models";
+import { Food, Offer, Order, Vandor } from "../models";
+import { Transaction } from "../models/Transaction";
 
 export const customerSignup = async (
   req: Request,
@@ -246,7 +248,7 @@ export const addToCart = async (
 
     let cartItems = Array();
 
-    const { _id, unit } = <orderInputs>req.body;
+    const { _id, unit } = <cartItem>req.body;
 
     const food = await Food.findById(_id);
 
@@ -335,6 +337,16 @@ export const deleteCart = async (
     .json({ message: "something went wrong please login again" });
 };
 
+const validateTransaction = async (txnId: string) => {
+  const currentTransaction = await Transaction.findById(txnId);
+
+  if (currentTransaction.status.toLowerCase() !== "failed") {
+    return { status: true, currentTransaction };
+  }
+
+  return { status: false, currentTransaction };
+};
+
 export const createOrder = async (
   req: Request,
   res: Response,
@@ -342,25 +354,38 @@ export const createOrder = async (
 ) => {
   const user = res.locals.user;
 
+  const { txnId, amount, items } = <orderInputs>req.body;
+
   const profile = await Customer.findById(user.id);
 
   if (user) {
-    const orderId = `${Math.floor(Math.random() * 89999) + 1000}`;
+    //validate transaction
 
-    const cart = <[orderInputs]>req.body;
+    const { status, currentTransaction } = await validateTransaction(txnId);
+
+    if (!status) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Error with create order" });
+    }
+
+    const orderId = `${Math.floor(Math.random() * 89999) + 1000}`;
 
     let cartItems = Array();
 
     let netAmount = 0.0;
 
+    let vandorId;
+
     const foods = await Food.find()
       .where("_id")
-      .in(cart.map((items) => items._id))
+      .in(items.map((items) => items._id))
       .exec();
 
     foods.map((food) => {
-      cart.map(({ _id, unit }) => {
+      items.map(({ _id, unit }) => {
         if (String(food._id) == _id) {
+          vandorId = food?.vandorId;
           netAmount += food.price * unit;
           cartItems.push({ food, unit });
         }
@@ -372,18 +397,28 @@ export const createOrder = async (
         orderId: orderId,
         items: cartItems,
         totalAmount: netAmount,
+        paidAmount: amount,
         orderDate: new Date(),
-        paidThrough: "COD",
-        PaymentResponse: "",
         orderStatus: "Waiting",
+        vandorId: vandorId,
+        remarks: "",
+        deliveryId: "",
       });
 
-      if (currentOrder) {
-        profile.orders.push(currentOrder);
-        const profileResponse = await profile.save();
+      profile.cart = [] as any;
+      profile.orders.push(currentOrder);
 
-        return res.status(StatusCodes.ACCEPTED).json(currentOrder);
-      }
+      currentTransaction.vandorId = vandorId;
+      currentTransaction.orderId = orderId;
+      currentTransaction.status = "CONFIRMED";
+
+      await currentTransaction.save();
+      assignOrderForDelivery(String(currentOrder._id), vandorId);
+      const profileResponse = await profile.save();
+
+      return res
+        .status(StatusCodes.ACCEPTED)
+        .json({ ...profileResponse, ...currentTransaction });
     }
 
     return res
@@ -432,4 +467,85 @@ export const getOrderById = async (
   return res
     .status(StatusCodes.BAD_REQUEST)
     .json({ message: "something went wrong please login again" });
+};
+
+export const verifyOffer = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = res.locals.user;
+
+  const offerId = req.params.id;
+
+  if (user) {
+    const offer = await Offer.findOne({ _id: offerId, isActive: true });
+
+    if (offer) {
+      if (offer?.promoType === "USER") {
+        //can create login for user to take offer only once
+      }
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: "offer is verified", offer: offer });
+    }
+  }
+
+  return res
+    .status(StatusCodes.BAD_REQUEST)
+    .json({ message: "something went wrong please login again" });
+};
+
+export const createPayment = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = res.locals.user;
+
+  const { amount, paymentMode, offerId } = req.body;
+
+  let payableAmount = Number(amount);
+
+  if (offerId) {
+    const appliedOffer = await Offer.findById(offerId);
+    if (appliedOffer && appliedOffer.isActive) {
+      payableAmount = payableAmount - appliedOffer.offerAmount;
+    }
+  }
+
+  //payment api gateway
+
+  // after payment gateway success / failure response
+
+  //create record on transaction
+
+  const transaction = await Transaction.create({
+    customer: user.id,
+    vandorId: "",
+    orderId: "",
+    orderValue: payableAmount,
+    offerUsed: offerId || "NA",
+    status: "OPEN", // oprn for COD failed success for online payment
+    paymentMode: paymentMode,
+    paymentResponse: "Payment is cash on delivery",
+  });
+
+  return res
+    .status(StatusCodes.ACCEPTED)
+    .json({ message: "payment successfull", data: transaction });
+};
+
+const assignOrderForDelivery = async (orderId: string, vandorId: string) => {
+  // find the vandor
+  const vandor = await Vandor.findById(vandorId);
+  if (vandor) {
+    const areaCode = vandor?.pincode;
+    const vandorLat = vandor?.lat;
+    const vandorLng = vandor?.lng;
+  }
+  //find the available delivery person
+
+  // check the nearest delivery person and assign the order
+  // update the order id
 };
