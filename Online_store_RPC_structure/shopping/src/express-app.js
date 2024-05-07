@@ -1,21 +1,25 @@
-const express = require('express');
-const cors  = require('cors');
-const path = require('path');
-const { shopping, appEvents } = require('./api');
-const { CreateChannel } = require('./utils')
+const express = require("express");
+const cors = require("cors");
+const redis = require("redis");
+const path = require("path");
+const { shopping, appEvents } = require("./api");
+const { CreateChannel } = require("./utils");
 
 module.exports = async (app) => {
+  app.use(express.json());
+  app.use(cors());
+  app.use(express.static(__dirname + "/public"));
 
-    app.use(express.json());
-    app.use(cors());
-    app.use(express.static(__dirname + '/public'))
- 
-    //api
-    // appEvents(app);
+  let redisClient;
+  redisClient = redis.createClient({
+    url: process.env.REDIS_URL,
+  });
 
-    const channel = await CreateChannel()
+  redisClient.on("error", (error) => console.error(`Error : ${error}`));
 
-    shopping(app, channel);
-    // error handling
-    
-}
+  await redisClient.connect();
+
+  const channel = await CreateChannel();
+
+  shopping(app, channel, redisClient);
+};

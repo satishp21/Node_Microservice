@@ -11,7 +11,6 @@ module.exports = async (app) => {
 
   let redisClient;
   redisClient = redis.createClient({
-    // url: "redis://default:bFFixdZSZG7gWimnasULNItL9Xlo0chC@redis-10957.c16.us-east-1-2.ec2.redns.redis-cloud.com:10957",
     url: process.env.REDIS_URL,
   });
 

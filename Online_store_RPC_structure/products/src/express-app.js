@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const redis = require("redis");
 const path = require("path");
 const { products, appEvents } = require("./api");
 
@@ -10,11 +11,16 @@ module.exports = async (app) => {
   app.use(cors());
   app.use(express.static(__dirname + "/public"));
 
-  //api
-  // appEvents(app);
+  let redisClient;
+  redisClient = redis.createClient({
+    url: process.env.REDIS_URL,
+  });
+
+  redisClient.on("error", (error) => console.error(`Error : ${error}`));
+
+  await redisClient.connect();
 
   const channel = await CreateChannel();
-  products(app, channel);
 
-  // error handling
+  products(app, channel, redisClient);
 };
