@@ -1,9 +1,9 @@
 const CustomerService = require("../services/customer-service");
 const UserAuth = require("./middlewares/auth");
-const { PublishMessage } = require("../utils");
+const { PublishMessage, getCaching, setCaching } = require("../utils");
 const { SHOPPING_SERVICE } = require("../config");
 
-module.exports = (app, channel) => {
+module.exports = (app, channel, redisClient) => {
   const service = new CustomerService();
 
   app.post("/signup", async (req, res, next) => {
@@ -36,6 +36,7 @@ module.exports = (app, channel) => {
         city,
         country,
       });
+      await setCaching(redisClient, `Profile${_id}`, data);
       return res.json(data);
     } catch (error) {
       next(error);
@@ -45,8 +46,20 @@ module.exports = (app, channel) => {
   app.get("/profile", UserAuth, async (req, res, next) => {
     try {
       const { _id } = req.user;
-      const data = await service.GetProfile({ _id });
-      return res.json(data);
+      let { isCached, results } = await getCaching(
+        redisClient,
+        `Profile${_id}`
+      );
+      if (results) {
+        return res.json({ data: results, fromCache: isCached });
+      } else {
+        results = await service.GetProfile(_id);
+        if (results.length === 0) {
+          throw "Api returned with an empty array";
+        }
+        await setCaching(redisClient, `Profile${_id}`, results);
+        return res.json({ data: results, fromCache: isCached });
+      }
     } catch (error) {
       next(error);
     }

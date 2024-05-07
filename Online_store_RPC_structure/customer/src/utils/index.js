@@ -86,3 +86,22 @@ module.exports.SubscribeMessage = async (channel, service) => {
     }
   );
 };
+
+module.exports.getCaching = async (redisClient, uniqueName) => {
+  let results;
+  let isCached = false;
+
+  const cacheResults = await redisClient.get(uniqueName);
+  if (cacheResults) {
+    isCached = true;
+    results = JSON.parse(cacheResults);
+  }
+  return { isCached, results };
+};
+
+module.exports.setCaching = async (redisClient, uniqueName, results) => {
+  await redisClient.set(uniqueName, JSON.stringify(results), {
+    EX: 30,
+    NX: true,
+  });
+};
